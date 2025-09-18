@@ -1,4 +1,4 @@
-(async function autoLikeCommentsAndNext({
+(async function autoLikeCommentsAndNext({ 
   maxVideos = 10,          // change to how many videos you want to process (use Infinity to keep going)
   scrollPause = 700,       // ms between scroll attempts
   stableRounds = 3,        // number of consecutive "no-scroll-change" rounds to consider "done"
@@ -62,21 +62,41 @@
 
     console.log(`💡 Found ${buttons.length} like buttons in comments (first pass).`);
     for (let i = 0; i < buttons.length && !window.__autoProcessStop; i++) {
-      try { buttons[i].click(); }
-      catch (err) { console.warn('click failed for button index', i, err); }
-      const delay = Math.floor(Math.random() * (likeDelayMax - likeDelayMin)) + likeDelayMin;
-      await wait(delay);
+      try {
+        const btn = buttons[i];
+        const pressed = btn.getAttribute("aria-pressed");
+
+        if (pressed === "true") {
+          console.log(`👍 Comment ${i} is already liked — skipping`);
+        } else {
+          btn.click();
+          console.log(`✅ Liked comment ${i}`);
+          const delay = Math.floor(Math.random() * (likeDelayMax - likeDelayMin)) + likeDelayMin;
+          await wait(delay);
+        }
+      } catch (err) {
+        console.warn('click failed for button index', i, err);
+      }
     }
 
     // Optional: short wait and one more quick scan for any remaining unclicked like buttons
     await wait(500);
-    const remain = pickButtons().length;
-    if (remain > 0) {
-      console.log(`🔁 ${remain} remaining like buttons found after first pass — doing a second quick pass.`);
-      const more = pickButtons();
+    const more = pickButtons();
+    if (more.length > 0) {
+      console.log(`🔁 ${more.length} remaining like buttons found after first pass — doing a second quick pass.`);
       for (let i = 0; i < more.length && !window.__autoProcessStop; i++) {
-        try { more[i].click(); } catch(_) {}
-        await wait(300);
+        try {
+          const btn = more[i];
+          const pressed = btn.getAttribute("aria-pressed");
+
+          if (pressed === "true") {
+            console.log(`👍 (second pass) Comment ${i} is already liked — skipping`);
+          } else {
+            btn.click();
+            console.log(`✅ (second pass) Liked comment ${i}`);
+            await wait(300);
+          }
+        } catch (_) {}
       }
     }
 
